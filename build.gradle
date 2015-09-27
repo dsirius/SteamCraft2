@@ -14,6 +14,9 @@ buildscript {
         classpath 'net.minecraftforge.gradle:ForgeGradle:1.2-SNAPSHOT'
     }
 }
+apply plugin: 'forge'
+apply from: 'https://raw.githubusercontent.com/BuiltBrokenModding/BuiltBrokenScripts/buildScripts/scripts/both/jars.gradle'
+apply from: 'https://raw.githubusercontent.com/BuiltBrokenModding/BuiltBrokenScripts/buildScripts/scripts/both/clean.gradle'
 
 repositories {
     maven {
@@ -38,21 +41,27 @@ repositories {
     }
 }
 
-apply plugin: 'forge'
-
 project.ext {
     buildNum = System.getenv("BUILD_NUMBER")
     mcVersion = "1.7.10"
 }
 
-version = project.ext.mcVersion + "-B4.5." + project.ext.buildNum
 group= "brassgoggledcoders" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "steamcraft2"
 
 minecraft {
-    version = "${project.ext.mcVersion}-10.13.4.1490-${project.ext.mcVersion}"
+    version = "${mcVersion}-10.13.4.1490-${mcVersion}"
     runDir = "eclipse"
 }
+
+version = "${project.minecraft.version}-B4.5."
+
+if (project.hasProperty("BUILD_NUMBER"))
+    version += project.ext.buildNum
+else
+    version += getDate()
+
+println "version = "+ version
 
 dependencies {
     compile "brassgoggledcoders:boilerplate:1.7.10-6.0.0.+:deobf"
@@ -62,8 +71,6 @@ dependencies {
     compile 'team.chisel:Chisel:2.9.0.3:deobf'
     compile 'team.chisel.ctmlib:CTMLib:MC1.7.10-1.3.0.2:deobf'
     compile name: "Botania", group: "vazkii.botania", version: "r1.6-190.6", classifier: "deobf"
-
-    compile files("libs/Railcraft_1.7.10-9.7.0.0-dev.jar")
 }
 
 task getLibraries {
@@ -82,35 +89,30 @@ task getLibraries {
     }
 }
 
-
-processResources
-{
+processResources {
     // this will ensure that this task is redone when the versions change.
     inputs.property "version", project.version
     inputs.property "mcversion", project.minecraft.version
 
     // replace stuff in mcmod.info, nothing else
-    from(sourceSets.main.resources.srcDirs) {
-        include 'mcmod.info'
-                
-        // replace version and mcversion
-        expand 'version':project.version, 'mcversion':project.minecraft.version
-    }
-        
-    // copy everything else, thats not the mcmod.info
-    from(sourceSets.main.resources.srcDirs) {
-        exclude 'mcmod.info'
-    }
+	from(sourceSets.main.resources.srcDirs) {
+		//include '**/*.lang'
+		include '**/*.info'
+		include '**/*.properties'
+
+		expand 'version': project.version, 'mcversion': project.minecraft.version
+		// replace version and MCVersion
+	}
+    
+	// copy everything else, thats not text
+	from(sourceSets.main.resources.srcDirs) {
+		exclude '**/*.info'
+		exclude '**/*.properties'
+	}
 }
 
 jar {
     classifier = "universal"
-}
-
-task deobfJar(type: Jar) {
-    from(sourceSets.main.output) {
-        classifier = "deobf"
-    }
 }
 
 // Create API library zip
@@ -128,7 +130,6 @@ apiZip.mustRunAfter deobfJar
 
 artifacts {
     archives deobfJar
-
 }
 
 task("uploadJars", dependsOn: "reobf") {
@@ -182,4 +183,9 @@ task("uploadJars", dependsOn: "reobf") {
 configurations.all {
     // check for updates every build
     resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
+}
+def getDate() {
+    def date = new Date()
+    def formattedDate = date.format('yyyyMMddHHmmss')
+    return formattedDate
 }

@@ -4,6 +4,7 @@ download
 push.sh
 remotebuild.py
 /libs
+output/
 
 ## Gradle
 /.gradle
