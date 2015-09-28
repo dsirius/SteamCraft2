@@ -56,11 +56,12 @@ minecraft {
 
 version = "${project.minecraft.version}-B4.5."
 
-if (project.hasProperty("BUILD_NUMBER"))
-    version += project.ext.buildNum
+if (System.getenv("BUILD_NUMBER") != null){
+    version += project.ext.buildNum }
 else
+{
     version += getDate()
-
+}
 println "version = "+ version
 
 dependencies {
